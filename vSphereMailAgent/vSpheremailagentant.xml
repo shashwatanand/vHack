@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project basedir="." default="all" name="vSphereMailAgent">
+        <target name="init">
+                <property name="name" value="vSphereMailAgent"/>
+                <property name="src.dir" value="src"/>
+                <property name="build.dir" value="build"/>
+                <property name="vSphereMailAgent.dir" value="."/>
+                <property name="classes.dir" value="${build.dir}/classes"/>
+                <property name="etc.dir" value="etc"/>
+                <property name="lib.dir" value="lib"/>
+               
+                <path id="classpath">
+                        <fileset dir="${lib.dir}">
+                                <include name="**/*.jar" />
+                        </fileset>
+                </path>
+        </target>
+       
+        <target depends="init" name="prepare">
+                <mkdir dir="${classes.dir}"/>
+                <mkdir dir="${classes.dir}/org"/>
+                <mkdir dir="${classes.dir}/org/pdpblr"/>
+                <mkdir dir="${classes.dir}/org/pdpblr/emailagent"/>
+				<mkdir dir="${classes.dir}/org/pdpblr/util"/>
+				<mkdir dir="${classes.dir}/org/pdpblr/vc"/>
+        </target>
+       
+        <target depends="init" name="clean">
+                <delete dir="${build.dir}" verbose="false"/>
+        </target>
+       
+        <target depends="prepare" name="compile">
+                <javac target="1.5" debug="true" deprecation="false" destdir="${classes.dir}" optimize="false" srcdir="${src.dir}" />
+        </target>
+       
+        <target depends="compile" name="jarfile">               
+                <copy overwrite="true" todir="${build.dir}" preservelastmodified="true">
+                        <fileset dir="${lib.dir}">
+                                <include name="*.jar">
+                        </fileset>
+                </copy>
+               
+                <jar basedir="${classes.dir}" compress="true" jarfile="${build.dir}/${name}.jar" manifest="${etc.dir}/MANIFEST.MF"/>            
+        </target>
+       
+        <target name="all">
+                <antcall target="clean"/>
+                <antcall target="compile"/>
+                <antcall target="jarfile"/>
+        </target>
+</project>
+
