@@ -5,12 +5,17 @@ import java.util.Scanner;
 
 import com.vmware.vim25.Description;
 import com.vmware.vim25.VirtualDeviceConfigSpec;
+import com.vmware.vim25.VirtualDeviceConfigSpecFileOperation;
 import com.vmware.vim25.VirtualDeviceConfigSpecOperation;
+import com.vmware.vim25.VirtualDisk;
+import com.vmware.vim25.VirtualDiskFlatVer2BackingInfo;
 import com.vmware.vim25.VirtualEthernetCard;
 import com.vmware.vim25.VirtualEthernetCardNetworkBackingInfo;
+import com.vmware.vim25.VirtualLsiLogicController;
 import com.vmware.vim25.VirtualMachineConfigSpec;
 import com.vmware.vim25.VirtualMachineFileInfo;
 import com.vmware.vim25.VirtualPCNet32;
+import com.vmware.vim25.VirtualSCSISharing;
 import com.vmware.vim25.mo.Datacenter;
 import com.vmware.vim25.mo.Folder;
 import com.vmware.vim25.mo.InventoryNavigator;
@@ -21,7 +26,11 @@ import com.vmware.vim25.mo.Task;
 public class CreateVM {
 	@SuppressWarnings("deprecation")
 	public static void main(String[] args) throws Exception {
-		String address, userName, password, vmName, operation;
+		String address, userName, password, vmName, diskMode;
+		String dcName,guestOsId, dataStoreName, netName, nicName, nicAddressType;
+		int noOfCPU, controllerKey;
+		long memorySizeInMB,diskSizeInKB;
+		
 		Scanner scanner = new Scanner(System.in);
 		System.out.println("Enter vCenter or ESXi IP address ?");
 		address = scanner.nextLine();
@@ -36,13 +45,42 @@ public class CreateVM {
 				+ "you want to create?");
 		vmName = scanner.nextLine();
 		
-		System.out.println("Enter operation - reboot|poweron|poweroff" 
-				+ "|reset|standby|suspend|shutdown");
-		operation = scanner.nextLine();
+		System.out.println("Enter datacenter name ?");
+		dcName = scanner.nextLine();
+		
+		System.out.println("Enter guest OS ID ?");
+		guestOsId = scanner.nextLine();
+		
+		System.out.println("Enter data store name ?");
+		dataStoreName = scanner.nextLine();
+		
+		System.out.println("Enter diskmode - persistent|independent_persistent");
+		diskMode = scanner.nextLine();
+		
+		System.out.println("Enter net name ?");
+		netName = scanner.nextLine();
+		
+		System.out.println("Enter nic name ?");
+		nicName = scanner.nextLine();
+		
+		System.out.println("Enter nic address type - generated|manual|assigned by VC");
+		nicAddressType = scanner.nextLine();
+		
+		System.out.println("Enter number of CPUs ?");
+		noOfCPU = scanner.nextInt();
+		
+		System.out.println("Enter controller key ?");
+		controllerKey = scanner.nextInt();
+		
+		System.out.println("Enter Memory Size In MB ?");
+		memorySizeInMB = scanner.nextLong();
+		
+		System.out.println("Enter Disk Size In KB ?");
+		diskSizeInKB = scanner.nextLong();
+		
 		scanner.close();
 		
-		
-		String dcName = "datacenter";
+		/*String dcName = "datacenter";
 		long memorySizeInMB = 500;
 		int noOfCPU = 1;
 		String guestOsId = "sles10Guest";
@@ -55,6 +93,7 @@ public class CreateVM {
 		String nicName = "Network Adapter 1";
 		// type: generated|manual|assigned by VC
 		String nicAddressType = "generated";
+		int controllerKey = 100;*/
 		
 		ServiceInstance serviceInstance = new ServiceInstance(new URL(address), 
 				userName, password, true);
@@ -75,9 +114,8 @@ public class CreateVM {
 		vmSpec.setGuestId(guestOsId);
 		
 		// VM virtual devices
-		int key = 100;
-		VirtualDeviceConfigSpec scsiSpec = createScsiSpec(key);
-		VirtualDeviceConfigSpec diskSpec = createDiskSpec(key, dataStoreName,
+		VirtualDeviceConfigSpec scsiSpec = createScsiSpec(controllerKey);
+		VirtualDeviceConfigSpec diskSpec = createDiskSpec(controllerKey, dataStoreName,
 				diskSizeInKB, diskMode);
 		VirtualDeviceConfigSpec nicSpec = createNicSpec(netName, nicName, nicAddressType);
 		
@@ -118,14 +156,38 @@ public class CreateVM {
 		return nicSpec;
 	}
 
-	private static VirtualDeviceConfigSpec createDiskSpec(int key, String dataStoreName, long diskSizeInKB,
+	private static VirtualDeviceConfigSpec createDiskSpec(int controllerKey, String dataStoreName, long diskSizeInKB,
 			String diskMode) {
-		// TODO Auto-generated method stub
-		return null;
+		VirtualDeviceConfigSpec diskSpec = new VirtualDeviceConfigSpec();
+		diskSpec.setOperation(VirtualDeviceConfigSpecOperation.add);
+		diskSpec.setFileOperation(VirtualDeviceConfigSpecFileOperation.create);
+		
+		VirtualDisk disk = new VirtualDisk();
+		disk.setCapacityInKB(diskSizeInKB);
+		disk.setKey(0);
+		disk.setUnitNumber(0);
+		disk.setControllerKey(controllerKey);
+		diskSpec.setDevice(disk);
+		
+		VirtualDiskFlatVer2BackingInfo backingInfo = new VirtualDiskFlatVer2BackingInfo();
+		String fileName = "[" + dataStoreName + "]";
+		backingInfo.setFileName(fileName);
+		backingInfo.setDiskMode(diskMode);
+		backingInfo.setThinProvisioned(true);
+		disk.setBacking(backingInfo);
+		
+		return diskSpec;
 	}
 
 	private static VirtualDeviceConfigSpec createScsiSpec(int key) {
-		// TODO Auto-generated method stub
-		return null;
+		VirtualDeviceConfigSpec scsiSpec = new VirtualDeviceConfigSpec();
+		scsiSpec.setOperation(VirtualDeviceConfigSpecOperation.add);
+		VirtualLsiLogicController scsiController = new VirtualLsiLogicController();
+		scsiController.setKey(key);
+		scsiController.setBusNumber(0);
+		scsiController.setSharedBus(VirtualSCSISharing.noSharing);
+		scsiSpec.setDevice(scsiController);
+		
+		return scsiSpec;
 	}
 }
