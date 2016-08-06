@@ -10,6 +10,7 @@ import com.vmware.vim25.mo.Task;
 import com.vmware.vim25.mo.VirtualMachine;
 
 public class VMPowerOps {
+	@SuppressWarnings("deprecation")
 	public static void main(String[] args) throws Exception {
 		String address, userName, password, vmName, operation;
 		Scanner scanner = new Scanner(System.in);
@@ -27,7 +28,7 @@ public class VMPowerOps {
 		vmName = scanner.nextLine();
 		
 		System.out.println("Enter operation - reboot|poweron|poweroff" 
-				+ "|reset|standby|suspend|shutdown?");
+				+ "|reset|standby|suspend|shutdown");
 		operation = scanner.nextLine();
 		scanner.close();
 		
@@ -42,20 +43,48 @@ public class VMPowerOps {
 			serviceInstance.getServerConnection().logout();
 			return;
 		}
+		Task task;
 		switch (operation) {
 			case "reboot":
 				vm.rebootGuest();
 				System.out.println(vmName + " guest OS rebooted");
 				break;
 			case "poweron":
-				Task task = vm.powerOnVM_Task(null);
+				task = vm.powerOnVM_Task(null);
 				if (task.waitForMe() == Task.SUCCESS) {
 					System.out.println(vmName + " powered on");
 				}
 				break;
+			case "poweroff":
+				task = vm.powerOffVM_Task();
+				if (task.waitForMe() == Task.SUCCESS) {
+					System.out.println(vmName + " powered off");
+				}
+				break;
+			case "reset":
+				task = vm.resetVM_Task();
+				if (task.waitForMe() == Task.SUCCESS) {
+					System.out.println(vmName + " reset");
+				}
+				break;
+			case "standby":
+				vm.standbyGuest();
+				System.out.println(vmName + " guest OS standby");
+				break;
+			case "suspend":
+				task = vm.suspendVM_Task();
+				if (task.waitForMe() == Task.SUCCESS) {
+					System.out.println(vmName + " suspended");
+				}
+				break;
+			case "shutdown":
+				vm.shutdownGuest();
+				System.out.println(vmName + " guest OS shutdown");
+				break;
 
-		default:
-			break;
+			default:
+				System.out.println("Wrong operation");
+				break;
 		}
 	}
 }
